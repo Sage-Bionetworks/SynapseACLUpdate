@@ -84,12 +84,12 @@ public class SynapseACLUpdate {
 			}
 			if (0==(i % 100)) {
 				System.out.println(format.format(new Date())+": "+(i+1)+" of "+entityIds.size()+
-						". Have changed "+numChanged+" ACLs."+
+						". Have changed "+numChanged+" ACLs. "+
 						notFound.size()+" ACLs were not found.");
 			}
 		}
 
-		System.out.println(format.format(new Date())+": Done!  Have changed "+numChanged+" of "+entityIds.size()+" ACLs."+
+		System.out.println(format.format(new Date())+": Done!  Have changed "+numChanged+" of "+entityIds.size()+" ACLs. "+
 				notFound.size()+" ACLs were not found.");
 
 		System.out.println("\nNot Found:\n"+notFound);
