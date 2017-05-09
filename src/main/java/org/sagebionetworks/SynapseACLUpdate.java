@@ -21,6 +21,7 @@ import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
 import org.sagebionetworks.client.SynapseClient;
+import org.sagebionetworks.client.exceptions.SynapseNotFoundException;
 import org.sagebionetworks.repo.model.ACCESS_TYPE;
 import org.sagebionetworks.repo.model.AccessControlList;
 import org.sagebionetworks.repo.model.ResourceAccess;
@@ -38,49 +39,60 @@ public class SynapseACLUpdate {
 		DateFormat format = new SimpleDateFormat("yyyy-MM-dd.HH:mm:ss");
 		String stagingArg = getProperty("STAGING", false);
 		boolean staging = StringUtils.isEmpty(stagingArg) || stagingArg.equalsIgnoreCase("true");
-    	System.out.println(format.format(new Date())+": Running against "+(staging?"STAGING":"PRODUCTION")+" database.");
+		System.out.println(format.format(new Date())+": Running against "+(staging?"STAGING":"PRODUCTION")+" database.");
 		SynapseClient synapse = SynapseClientFactory.createSynapseClient(staging);
-    	String userName = getProperty("SYNAPSE_USERNAME");
-    	String password = getProperty("SYNAPSE_PASSWORD");
-    	LoginRequest loginRequest = new LoginRequest();
-    	loginRequest.setUsername(userName);
-    	loginRequest.setPassword(password);
-    	synapse.login(loginRequest);
+		String userName = getProperty("SYNAPSE_USERNAME");
+		String password = getProperty("SYNAPSE_PASSWORD");
+		LoginRequest loginRequest = new LoginRequest();
+		loginRequest.setUsername(userName);
+		loginRequest.setPassword(password);
+		synapse.login(loginRequest);
 
-    	// this list is about 16,000 long, small enough to fit into memory
-    	List<Long> entityIds = new ArrayList<Long>(18000);
-    	try (
-    	    FileInputStream is = new FileInputStream("/owner_id.txt");
-    	    InputStreamReader isr = new InputStreamReader(is, Charset.forName("UTF-8"));
-    	    BufferedReader br = new BufferedReader(isr);
-    	) {
-        	String entityId;
-    	    while ((entityId = br.readLine()) != null) {
-    	    	if (entityId.equalsIgnoreCase("OWNER_ID")) {
-    	    		continue;
-    	    	}
-    	    	entityIds.add(Long.parseLong(entityId));
-    	    }
-    	}
-    	
+		// this list is about 16,000 long, small enough to fit into memory
+		List<Long> entityIds = new ArrayList<Long>(18000);
+		try (
+				FileInputStream is = new FileInputStream("/owner_id.txt");
+				InputStreamReader isr = new InputStreamReader(is, Charset.forName("UTF-8"));
+				BufferedReader br = new BufferedReader(isr);
+				) {
+			String entityId;
+			while ((entityId = br.readLine()) != null) {
+				if (entityId.equalsIgnoreCase("OWNER_ID")) {
+					continue;
+				}
+				entityIds.add(Long.parseLong(entityId));
+			}
+		}
 
-    	System.out.println(format.format(new Date())+": There are "+entityIds.size()+" ACLs to process.");
-    	
+
+		System.out.println(format.format(new Date())+": There are "+entityIds.size()+" ACLs to process.");
+
 		int numChanged=0;
-    	for (int i=0 ; i<entityIds.size(); i++) {
-    		Long entityId = entityIds.get(i);
-	    	AccessControlList acl = synapse.getACL("syn"+entityId);
-	        boolean changed = transformACL(acl);
-	        if (changed) {
-	        	synapse.updateACL(acl);
-	        	numChanged++;
-	        }
-	        if (0==(i % 100)) {
-	        	System.out.println(format.format(new Date())+": "+(i+1)+" of "+entityIds.size()+". Have changed "+numChanged+" ACLs.");
-	        }
-    	}
-    	
-    	System.out.println(format.format(new Date())+": Done!  Have changed "+numChanged+" of "+entityIds.size()+" ACLs.");
+		List<String> notFound = new ArrayList<String>();
+		for (int i=0 ; i<entityIds.size(); i++) {
+			Long entityId = entityIds.get(i);
+			String stringId = "syn"+entityId;
+			try {
+				AccessControlList acl = synapse.getACL(stringId);
+				boolean changed = transformACL(acl);
+				if (changed) {
+					synapse.updateACL(acl);
+					numChanged++;
+				}
+			} catch (SynapseNotFoundException e) {
+				notFound.add(stringId);
+			}
+			if (0==(i % 100)) {
+				System.out.println(format.format(new Date())+": "+(i+1)+" of "+entityIds.size()+
+						". Have changed "+numChanged+" ACLs."+
+						notFound.size()+" ACLs were not found.");
+			}
+		}
+
+		System.out.println(format.format(new Date())+": Done!  Have changed "+numChanged+" of "+entityIds.size()+" ACLs."+
+				notFound.size()+" ACLs were not found.");
+
+		System.out.println("\nNot Found:\n"+notFound);
 	}
 	
 	/*
