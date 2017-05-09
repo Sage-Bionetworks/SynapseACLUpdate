@@ -29,9 +29,10 @@ public class SynapseClientFactory {
 	private static SynapseClient createSynapseClientIntern(boolean staging) {
 		SynapseClientImpl scIntern = new SynapseClientImpl();
 		if (staging) {
-			// TODO
+			scIntern.setAuthEndpoint("https://repo-staging.prod.sagebase.org/auth/v1");
+			scIntern.setRepositoryEndpoint("https://repo-staging.prod.sagebase.org/repo/v1");
+			scIntern.setFileEndpoint("https://repo-prod.staging.sagebase.org/file/v1");
 		} else {
-
 			scIntern.setAuthEndpoint("https://repo-prod.prod.sagebase.org/auth/v1");
 			scIntern.setRepositoryEndpoint("https://repo-prod.prod.sagebase.org/repo/v1");
 			scIntern.setFileEndpoint("https://repo-prod.prod.sagebase.org/file/v1");

@@ -35,8 +35,10 @@ import org.sagebionetworks.repo.model.auth.LoginRequest;
 public class SynapseACLUpdate {
 		
 	public static void main(String [] args) throws Exception {
+		DateFormat format = new SimpleDateFormat("yyyy-MM-dd.HH:mm:ss");
 		String stagingArg = getProperty("STAGING", false);
 		boolean staging = StringUtils.isEmpty(stagingArg) || stagingArg.equalsIgnoreCase("true");
+    	System.out.println(format.format(new Date())+": Running against "+(staging?"STAGING":"PRODUCTION")+" database.");
 		SynapseClient synapse = SynapseClientFactory.createSynapseClient(staging);
     	String userName = getProperty("SYNAPSE_USERNAME");
     	String password = getProperty("SYNAPSE_PASSWORD");
@@ -61,7 +63,6 @@ public class SynapseACLUpdate {
     	    }
     	}
     	
-		DateFormat format = new SimpleDateFormat("yyyy-MM-dd.HH:mm:ss");
 
     	System.out.println(format.format(new Date())+": There are "+entityIds.size()+" ACLs to process.");
     	
