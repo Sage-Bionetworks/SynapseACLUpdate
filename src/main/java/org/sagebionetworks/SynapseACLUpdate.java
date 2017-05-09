@@ -4,12 +4,16 @@ import static org.sagebionetworks.repo.model.AuthorizationConstants.BOOTSTRAP_PR
 import static org.sagebionetworks.repo.model.AuthorizationConstants.BOOTSTRAP_PRINCIPAL.PUBLIC_GROUP;
 
 import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
@@ -44,7 +48,7 @@ public class SynapseACLUpdate {
     	// this list is about 16,000 long, small enough to fit into memory
     	List<Long> entityIds = new ArrayList<Long>(18000);
     	try (
-    	    InputStream is = SynapseACLUpdate.class.getResourceAsStream("owner_id.txt");
+    	    FileInputStream is = new FileInputStream("/owner_id.txt");
     	    InputStreamReader isr = new InputStreamReader(is, Charset.forName("UTF-8"));
     	    BufferedReader br = new BufferedReader(isr);
     	) {
@@ -57,9 +61,11 @@ public class SynapseACLUpdate {
     	    }
     	}
     	
-    	System.out.println("There are "+entityIds.size()+" ACLs to process.");
+		DateFormat format = new SimpleDateFormat("yyyy-MM-dd.HH:mm:ss");
+
+    	System.out.println(format.format(new Date())+": There are "+entityIds.size()+" ACLs to process.");
     	
-    	int numChanged=0;
+		int numChanged=0;
     	for (int i=0 ; i<entityIds.size(); i++) {
     		Long entityId = entityIds.get(i);
 	    	AccessControlList acl = synapse.getACL("syn"+entityId);
@@ -69,11 +75,11 @@ public class SynapseACLUpdate {
 	        	numChanged++;
 	        }
 	        if (0==(i % 100)) {
-	        	System.out.println(""+(i+1)+" of "+entityIds.size()+". Have changed "+numChanged+" ACLs.");
+	        	System.out.println(format.format(new Date())+": "+(i+1)+" of "+entityIds.size()+". Have changed "+numChanged+" ACLs.");
 	        }
     	}
     	
-    	System.out.println("Done!  Have changed "+numChanged+" of "+entityIds.size()+" ACLs.");
+    	System.out.println(format.format(new Date())+": Done!  Have changed "+numChanged+" of "+entityIds.size()+" ACLs.");
 	}
 	
 	/*
